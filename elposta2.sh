@@ -136,10 +136,28 @@ sqlplus $DATABASE << END
   	exit
 END
 #sleep 2
+
+
 #BFM 
 echo "                              Ejecutando BFM. . . "
 MFM -a "-plugInPath $INFINYS_ROOT/RB/lib/libGnvJIBP.so" &
 echo
+
+#BILL CYCLE 
+billcyle=$(echo $billcycle | tr -d ' ')
+
+#BFM
+echo "                              Corriendo BFM"
+BFM -a "-billCycle $billcycle"
+
+#Respuesta Garino 
+
+
+
+
+#RFU
+echo "                              Corriendo RFU"
+RFU
 
 
 echo "                              Comentariando Fechas. . ."
