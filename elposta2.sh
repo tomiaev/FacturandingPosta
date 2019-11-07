@@ -172,16 +172,32 @@ var10="OCT"
 var11="NOV"
 var12="DEC"
 val=$( eval eval echo \$var$mon )
-echo "el valor es $dat-$val-$yr"
-echo $mon$yr
+fechames="$dat-$val-$yr"
+mesanio="$mon$yr"
 
 
 #Respuesta Garino 
-sqlplus $DATABASE << END
-select fa.dgi_file_seq,
-       fa.DGI_INPUT_FILE_NAME, 
-       'DGI'||substr(fa.DGI_INPUT_FILE_NAME,1,16)||'_MMAAAA000000.txt' as nombreArchivoRespDGI,
-       ik.RBM_INVOICE_NUM||'-'||ik.RBM_INV_SPLIT_SEQ  --nro interno RBM
+nombrearchivo=$(sqlplus $DATABASE << END
+select distinct 'DGI'||substr(fa.DGI_INPUT_FILE_NAME,1,16)||'_$mesanio000000.txt' as nombreArchivoRespDGI
+from billsummary bs, TFNU_DGIRBMINVOICEVALUE iv,TFNU_DGIRBMINVOICEKEY  ik,TFNU_DGIFILEAUDIT fa
+where bs.bill_status=1
+and bs.bill_dtm='$fechames'
+and bs.account_num=iv.account_num
+and bs.bill_seq=iv.rbm_bill_seq
+and bs.bill_version=iv.rbm_bill_version
+and bs.account_num=ik.account_num
+and bs.bill_seq=ik.rbm_bill_seq
+and bs.bill_version=ik.rbm_bill_version
+and ik.dgi_file_seq=fa.dgi_file_seq
+and iv.account_num like '%$BA%'
+order by nombreArchivoRespDGI;
+quit
+exit
+END
+)
+
+registro=$(sqlplus $DATABASE << END
+select ik.RBM_INVOICE_NUM||'-'||ik.RBM_INV_SPLIT_SEQ  --nro interno RBM
        ||'||'||
        ik.DGI_INVOICE_TYPE                            --id comprobante DGI
        ||'||'||
@@ -212,7 +228,7 @@ select fa.dgi_file_seq,
        ''      as registrosArchResp                   --errorRechazo
 from billsummary bs, TFNU_DGIRBMINVOICEVALUE iv,TFNU_DGIRBMINVOICEKEY  ik,TFNU_DGIFILEAUDIT fa
 where bs.bill_status=1
-and bs.bill_dtm='01-MES-2019' --> Completar fecha formato 00-MMM-2019
+and bs.bill_dtm='$fechames'
 and bs.account_num=iv.account_num
 and bs.bill_seq=iv.rbm_bill_seq
 and bs.bill_version=iv.rbm_bill_version
@@ -220,10 +236,14 @@ and bs.account_num=ik.account_num
 and bs.bill_seq=ik.rbm_bill_seq
 and bs.bill_version=ik.rbm_bill_version
 and ik.dgi_file_seq=fa.dgi_file_seq
-and iv.account_num = '$BA'
+and ik.RBM_INVOICE_NUM like '%$BA%'
+order by nombreArchivoRespDGI;
 quit
-    	exit
+exit
 END
+)
+
+
 
 
 
