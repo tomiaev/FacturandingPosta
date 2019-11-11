@@ -150,7 +150,7 @@ billcyle=$(echo $billcycle | tr -d ' ')
 echo "                              Corriendo BFM"
 BFM -a "-billCycle $billcycle"
 
-#VARIABLE FECHA 
+#VARIABLE FECHA y crear archivo
 len=${#date}
 echo "Length" $len
 dat=${date:6:8}
@@ -175,11 +175,15 @@ val=$( eval eval echo \$var$mon )
 fechames="$dat-$val-$yr"
 mesanio="$mon$yr"
 
+#testigos
+echo "fechames "$fechames
+echo "mesanio "$mesanio
 
-#Respuesta Garino 
-nombrearchivo=$(sqlplus $DATABASE << END
-select distinct 'DGI'||substr(fa.DGI_INPUT_FILE_NAME,1,16)||'_$mesanio000000.txt' as nombreArchivoRespDGI
-from billsummary bs, TFNU_DGIRBMINVOICEVALUE iv,TFNU_DGIRBMINVOICEKEY  ik,TFNU_DGIFILEAUDIT fa
+findearchivo=000000.txt
+nombrearchivo=$(sqlplus -s $DATABASE << END
+set pagesize 0 feedback off verify off heading off echo off;
+select distinct 'DGI'||substr(fa.DGI_INPUT_FILE_NAME,1,16)||'_$mesanio$findearchivo' as nombreArchivoRespDGI
+from billsummary bs, TFNU_DGIRBMINVOICEVALUE iv,TFNU_DGIRBMINVOICEKEY ik,TFNU_DGIFILEAUDIT fa
 where bs.bill_status=1
 and bs.bill_dtm='$fechames'
 and bs.account_num=iv.account_num
@@ -191,14 +195,18 @@ and bs.bill_version=ik.rbm_bill_version
 and ik.dgi_file_seq=fa.dgi_file_seq
 and iv.account_num like '%$BA%'
 order by nombreArchivoRespDGI;
-quit
-exit
+exit;
 END
 )
 
 
 
-registro=$(sqlplus $DATABASE << END
+sqlplus -s $DATABASE << EOF
+SPOOL /home/rbmadmin/$nombrearchivo
+set heading off;
+set echo off;
+SET LINESIZE 191
+SET PAGESIZE 50
 select ik.RBM_INVOICE_NUM||'-'||ik.RBM_INV_SPLIT_SEQ  --nro interno RBM
        ||'||'||
        ik.DGI_INVOICE_TYPE                            --id comprobante DGI
@@ -238,20 +246,10 @@ and bs.account_num=ik.account_num
 and bs.bill_seq=ik.rbm_bill_seq
 and bs.bill_version=ik.rbm_bill_version
 and ik.dgi_file_seq=fa.dgi_file_seq
-and ik.RBM_INVOICE_NUM like '%$BA%'
-order by nombreArchivoRespDGI;
-quit
-exit
-END
-)
-
-
-#crear archivo
-
-cat o touch no/me/acuerdo/el/directorio/base/$nombrearchivo.txt 
-
-
-
+and iv.account_num = '$BA';
+SPOOL OFF
+EXIT;
+EOF
 
 
 #RFU
