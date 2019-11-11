@@ -196,6 +196,8 @@ exit
 END
 )
 
+
+
 registro=$(sqlplus $DATABASE << END
 select ik.RBM_INVOICE_NUM||'-'||ik.RBM_INV_SPLIT_SEQ  --nro interno RBM
        ||'||'||
@@ -242,6 +244,11 @@ quit
 exit
 END
 )
+
+
+#crear archivo
+
+cat o touch no/me/acuerdo/el/directorio/base/$nombrearchivo.txt 
 
 
 
