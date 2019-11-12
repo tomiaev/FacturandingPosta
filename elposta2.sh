@@ -15,11 +15,9 @@ echo
 #BajarProcesos
 echo "                              Matando DCONFIG. . ."
 dconfigadmin -H $HOSTNAME
-
 #killall TM
 echo "                              Matando TM. . ."
 killall TM
-
 #Descomentar la SYSdateOverride
 sqlplus $DATABASE << END
 	update gparams set name='SYSdateOverride' where name = '#SYSdateOverride';
@@ -28,9 +26,8 @@ sqlplus $DATABASE << END
     exit
 END
 
-
 #FECHAAA
-export GENEVA_FIXEDDATE=''$fecha' 10000000' 
+export GENEVA_FIXEDDATE=''$date' 10000000' 
 echo $GENEVA_FIXEDDATE 
 #LevantarProcesos
 echo "                              Levantando DCONFIG. . ."
@@ -84,12 +81,11 @@ echo
 echo "                              Levantando TM"
 TM -u geneva_admin -p M3ch4_A_4su@$ORACLE_SID &
 echo
-sleep 0.5
 #BG
 echo "                              Ejecutando BG. . . "
+
 BG -a "-a "$BA""
 echo
-sleep 0.5
 #BDW y consulta para conseguir el bill_style_id 
 echo "                              Ejecutando BDW. . . "
 
@@ -99,18 +95,16 @@ formatter=$(sqlplus -s $DATABASE <<END
        exit;
 END
 )
-sleep 0.5
 #BDW  consulta para conseguir el bill_style_id 
 
-#billcycle=$(sqlplus -s $DATABASE <<END
-#       set pagesize 0 feedback off verify off heading off echo off;
-#       select BILL_CYCLE from accountattributes where account_num IN ('$BA');
-#       exit;
-#END
-#)
+billcycle=$(sqlplus -s $DATABASE <<END
+       set pagesize 0 feedback off verify off heading off echo off;
+       select BILL_CYCLE from accountattributes where account_num IN ('$BA');
+       exit;
+END
+)
 #sleep 0.5
 #BDW y consulta para conseguir el bill_style_id 
-
 
 #echo
 #echo "El billcyle es: $billcycle"
@@ -124,10 +118,8 @@ BDW -a " -formatterID $formatter -bill "
 #BDW -a " -formatterID $formatter -bill -aattr BILL_CYCLE=$billcyle" & 
 #echo El valor de formater es $formatter
 echo
-sleep 1
 
 #BDW -a "-formatterID 1 -bill -aattr BILL_CYCLE=04" > BDW_23547306_1.LOG & Version que dio Kiriti, aparentemente debe ser así la llamada. con el cycle
-
 
 #Provisto por Kiriti, para actualizar la tabla de job antes del MFM. 
 sqlplus $DATABASE << END
@@ -137,9 +129,8 @@ sqlplus $DATABASE << END
 END
 #sleep 2
 
-
-#BFM 
-echo "                              Ejecutando BFM. . . "
+#MFM 
+echo "                              Ejecutando MFM. . . "
 MFM -a "-plugInPath $INFINYS_ROOT/RB/lib/libGnvJIBP.so" &
 echo
 
@@ -199,10 +190,8 @@ exit;
 END
 )
 
-
-
 sqlplus -s $DATABASE << EOF
-SPOOL /home/rbmadmin/$nombrearchivo
+SPOOL /u02/netcracker/rbm/infinys_root/RBM_int/RFU/RFUInputDir/$nombrearchivo
 set heading off;
 set echo off;
 SET LINESIZE 191
@@ -251,33 +240,31 @@ SPOOL OFF
 EXIT;
 EOF
 
-
 #RFU
 echo "                              Corriendo RFU"
 RFU
 
+#PDI
+echo "                              Corriendo PDI"
+PDI -a "-mode NORMAL"
 
 echo "                              Comentariando Fechas. . ."
 unset GENEVA_FIXEDDATE 
 
 echo "                              Matando DCONFIG. . ."
 dconfigadmin -H $HOSTNAME
-sleep 0.5
 #killall TM
 echo "                              Matando TM. . ."
 killall TM
-
 
 sqlplus $DATABASE << END
 	update gparams set name='#SYSdateOverride' where name = 'SYSdateOverride';      
 	quit
     	exit
 END
-sleep 0.5
 #LevantarProcesos
 echo "                              Levantando DCONFIG. . ."
 nohup DConfigAgent &
-sleep 0.5
 echo "                              Levantando los SITTER. . . "
 sitter -N RBMPROD -s BG_1
 sitter -N RBMPROD -s BG_2
@@ -322,13 +309,8 @@ sitter -N RBMPROD -s EXP
 sitter -N RBMPROD -s CCELoader 
 sitter -N RBMPROD -s CASP 
 echo
-sleep 0.5
 echo "                              Levantando TM"
 TM -u geneva_admin -p M3ch4_A_4su@$ORACLE_SID &
 echo
 
-
 echo "                              PROCESO FINALIZADO!"
-
-
-
