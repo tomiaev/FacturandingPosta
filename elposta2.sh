@@ -251,7 +251,7 @@ sleep 0.5
 
 #PDI
 echo "                                                         ***Corriendo PDI***"
-PDI -a "-mode NORMAL"
+PDI -a "-mode NORMAL -billCycle $billcyle"
 
 echo "                                                         ***Comentariando Fechas***"
 unset GENEVA_FIXEDDATE 
