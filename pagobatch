@@ -1,0 +1,98 @@
+#!/bin/sh
+
+
+echo "                  Seleccione la cuenta a pagar"
+read BA 
+echo
+echo "                  Seleccione el numero de la entidad a utilizar" 
+
+echo "
+1: BANRED  
+2: BROU   
+3: CORREO
+4: DEVOTO
+5: DISCO 
+6: GEANT
+7: REDPAGOS
+8: TIENDA INGLESA
+"
+
+read entidad
+
+if [ $entidad == 1 ]; then
+    enti='BRD'
+    fi
+if [ $entidad == 2 ]; then
+    enti='BRO'
+    fi
+if [ $entidad == 3 ]; then
+    enti='COR'
+    fi
+if [ $entidad == 4 ]; then
+    enti='DEV'
+    fi
+if [ $entidad == 5 ]; then
+    enti='DCO'
+    fi
+if [ $entidad == 6 ]; then
+    enti='GEN'
+    fi
+if [ $entidad == 7 ]; then
+    enti='RPA'
+    fi
+if [ $entidad == 8 ]; then
+    enti='TIE'
+fi
+
+echo $enti
+
+olddate=`date +%Y%m%d --date='-7 day'`
+
+echo "fecha vieja:" $olddate
+echo `date +%Y%m%d`
+fechahoy = `date +%Y%m%d`
+echo "$enti;$BA;;$olddate;000000000230000;UYU;"
+
+
+
+sqlplus $DATABASE << END
+	update gparams set name='SYSdateOverride' where name = '#SYSdateOverride';  
+	update gparams set name='SYSdateValue' where name = '#SYSdateValue';	
+	commit;
+	update gparams set STRING_VALUE ='$fechahoy 100000' where name = 'SYSdateValue';
+	quit
+    exit
+END
+
+
+
+
+
+
+
+
+
+
+
+
+
+sqlplus $DATABASE << END
+	update gparams set STRING_VALUE ='ANY' where name = 'SYSdateValue';   
+	update gparams set name='#SYSdateOverride' where name = 'SYSdateOverride';  
+	update gparams set name='#SYSdateValue' where name = 'SYSdateValue';  
+	commit;
+	quit
+    exit
+END
+
+
+
+
+
+
+
+
+
+
+
+
