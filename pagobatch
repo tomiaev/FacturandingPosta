@@ -1,60 +1,75 @@
 #!/bin/sh
 
-
 echo "                  Seleccione la cuenta a pagar"
 read BA 
 echo
 echo "                  Seleccione el numero de la entidad a utilizar" 
-
 echo "
 1: BANRED  
-2: BROU   
-3: CORREO
-4: DEVOTO
-5: DISCO 
-6: GEANT
-7: REDPAGOS
-8: TIENDA INGLESA
+2: REDPAGOS   
 "
-
 read entidad
 
 if [ $entidad == 1 ]; then
     enti='BRD'
     fi
 if [ $entidad == 2 ]; then
-    enti='BRO'
-    fi
-if [ $entidad == 3 ]; then
-    enti='COR'
-    fi
-if [ $entidad == 4 ]; then
-    enti='DEV'
-    fi
-if [ $entidad == 5 ]; then
-    enti='DCO'
-    fi
-if [ $entidad == 6 ]; then
-    enti='GEN'
-    fi
-if [ $entidad == 7 ]; then
     enti='RPA'
     fi
-if [ $entidad == 8 ]; then
-    enti='TIE'
-fi
 
-echo $enti
+echo "
+1: Pesos Uruguayos  
+2: Dolares   
+
+"
+read moneda
+
+if [ $moneda == 1 ]; then
+    divi='UYU'
+    fi
+if [ $moneda == 2 ]; then
+    divi='USD'
+    fi
+
+echo "         Ingresa un monto"
+read monto
+cerito=00
+len=${#monto}
+
+largofijo=13
+let cantceros=$largofijo-$len
+echo "cantidad de ceros" $cantceros
+echo "monto" $monto
+
+for (( c=1; c<=$cantceros; c++ ))
+do  
+   ceros="0${ceros}"
+done
+montotal="$ceros$monto$cerito"
+echo "monto total" $montotal
 
 olddate=`date +%Y%m%d --date='-7 day'`
 
 echo "fecha vieja:" $olddate
-echo `date +%Y%m%d`
-fechahoy = `date +%Y%m%d`
-echo "$enti;$BA;;$olddate;000000000230000;UYU;"
+fechahoy=`date +%Y%m%d`
+echo "fecha actual:" $fechahoy
+contenido="$enti;$BA;;$olddate;$montotal;$divi;"
 
+filename=$enti-$fechahoy'100000'
 
+echo $filename
+echo $contenido
 
+echo $contenido>/u02/netcracker/rbm/infinys_root/RBM_int/BEPP/BEPPInputDir/$filename.txt
+
+#BajarProcesos
+echo "                                                         ***Matando DCONFIG***"
+dconfigadmin -H $HOSTNAME
+#killall TM
+echo "                                                         ***Matando TM***"
+killall TM
+
+#aprontando 
 sqlplus $DATABASE << END
 	update gparams set name='SYSdateOverride' where name = '#SYSdateOverride';  
 	update gparams set name='SYSdateValue' where name = '#SYSdateValue';	
@@ -64,18 +79,80 @@ sqlplus $DATABASE << END
     exit
 END
 
+#GENEVA_FIXEDDATE tiene el mismo de fecha y hora que SYSdateValue
+export GENEVA_FIXEDDATE=''$fechahoy' 10000000' 
+echo $GENEVA_FIXEDDATE 
 
+#LevantarProcesos
+echo "                                                         ***Levantando DCONFIG***"
+nohup DConfigAgent &
+sleep 0.5
+echo "                                                         ***Levantando los SITTER*** "
+sitter -N RBMPROD -s BG_1
+sitter -N RBMPROD -s BG_2
+sitter -N RBMPROD -s BG_3 
+sitter -N RBMPROD -s BC 
+sitter -N RBMPROD -s FID 
+sitter -N RBMPROD -s FID.GSM 
+sitter -N RBMPROD -s FID.SMSC 
+sitter -N RBMPROD -s FID.GRE 
+sitter -N RBMPROD -s RMFP_1 
+sitter -N RBMPROD -s RMFP_2 
+sitter -N RBMPROD -s RMFP_3 
+sitter -N RBMPROD -s RMFP_4 
+sitter -N RBMPROD -s RMFP_5 
+sitter -N RBMPROD -s RMFP_6 
+sitter -N RBMPROD -s RMFP_7 
+sitter -N RBMPROD -s RMFP_8 
+sitter -N RBMPROD -s RMFP_9 
+sitter -N RBMPROD -s RMFP_10 
+sitter -N RBMPROD -s RMFP_11 
+sitter -N RBMPROD -s RMFP_12 
+sitter -N RBMPROD -s RMFP_13 
+sitter -N RBMPROD -s RMFP_14 
+sitter -N RBMPROD -s RMFP_15 
+sitter -N RBMPROD -s CEU_01 
+sitter -N RBMPROD -s CEU_02 
+sitter -N RBMPROD -s CEU_03 
+sitter -N RBMPROD -s CEU_04 
+sitter -N RBMPROD -s CEU_05 
+sitter -N RBMPROD -s RRR_1 
+sitter -N RBMPROD -s RRR_2 
+sitter -N RBMPROD -s RRR_3 
+sitter -N RBMPROD -s RRR_4 
+sitter -N RBMPROD -s RRR_5 
+sitter -N RBMPROD -s RJR_1 
+sitter -N RBMPROD -s RJR_2 
+sitter -N RBMPROD -s DUM 
+sitter -N RBMPROD -s COA0 
+sitter -N RBMPROD -s ODD 
+sitter -N RBMPROD -s GOMP 
+sitter -N RBMPROD -s EXP 
+sitter -N RBMPROD -s CCELoader 
+sitter -N RBMPROD -s CASP 
+echo
+sleep 0.5
+echo "                                                         ***Levantando TM***"
+TM -u geneva_admin -p M3ch4_A_4su@$ORACLE_SID &
+echo
+sleep 0.5
 
+echo " Corriendo BEPP" 
 
+BEPP 
 
+#BajarProcesos
+echo "                                                         ***Matando DCONFIG***"
+dconfigadmin -H $HOSTNAME
+#killall TM
+echo "                                                         ***Matando TM***"
+killall TM
 
+#unset fixeddate
+echo
+unset GENEVA_FIXEDDATE 
 
-
-
-
-
-
-
+#revirtiendo 
 sqlplus $DATABASE << END
 	update gparams set STRING_VALUE ='ANY' where name = 'SYSdateValue';   
 	update gparams set name='#SYSdateOverride' where name = 'SYSdateOverride';  
@@ -85,14 +162,58 @@ sqlplus $DATABASE << END
     exit
 END
 
+#LevantarProcesos
+echo "                                                         ***Levantando DCONFIG***"
+nohup DConfigAgent &
+sleep 0.5
+echo "                                                         ***Levantando los SITTER*** "
+sitter -N RBMPROD -s BG_1
+sitter -N RBMPROD -s BG_2
+sitter -N RBMPROD -s BG_3 
+sitter -N RBMPROD -s BC 
+sitter -N RBMPROD -s FID 
+sitter -N RBMPROD -s FID.GSM 
+sitter -N RBMPROD -s FID.SMSC 
+sitter -N RBMPROD -s FID.GRE 
+sitter -N RBMPROD -s RMFP_1 
+sitter -N RBMPROD -s RMFP_2 
+sitter -N RBMPROD -s RMFP_3 
+sitter -N RBMPROD -s RMFP_4 
+sitter -N RBMPROD -s RMFP_5 
+sitter -N RBMPROD -s RMFP_6 
+sitter -N RBMPROD -s RMFP_7 
+sitter -N RBMPROD -s RMFP_8 
+sitter -N RBMPROD -s RMFP_9 
+sitter -N RBMPROD -s RMFP_10 
+sitter -N RBMPROD -s RMFP_11 
+sitter -N RBMPROD -s RMFP_12 
+sitter -N RBMPROD -s RMFP_13 
+sitter -N RBMPROD -s RMFP_14 
+sitter -N RBMPROD -s RMFP_15 
+sitter -N RBMPROD -s CEU_01 
+sitter -N RBMPROD -s CEU_02 
+sitter -N RBMPROD -s CEU_03 
+sitter -N RBMPROD -s CEU_04 
+sitter -N RBMPROD -s CEU_05 
+sitter -N RBMPROD -s RRR_1 
+sitter -N RBMPROD -s RRR_2 
+sitter -N RBMPROD -s RRR_3 
+sitter -N RBMPROD -s RRR_4 
+sitter -N RBMPROD -s RRR_5 
+sitter -N RBMPROD -s RJR_1 
+sitter -N RBMPROD -s RJR_2 
+sitter -N RBMPROD -s DUM 
+sitter -N RBMPROD -s COA0 
+sitter -N RBMPROD -s ODD 
+sitter -N RBMPROD -s GOMP 
+sitter -N RBMPROD -s EXP 
+sitter -N RBMPROD -s CCELoader 
+sitter -N RBMPROD -s CASP 
+echo
+sleep 0.5
+echo "                                                         ***Levantando TM***"
+TM -u geneva_admin -p M3ch4_A_4su@$ORACLE_SID &
+echo
+sleep 0.5
 
-
-
-
-
-
-
-
-
-
-
+echo "                                            PROCESO FINALIZADO!!! " 
