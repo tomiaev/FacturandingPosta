@@ -3,8 +3,56 @@
 #consultar datos necesarios
 echo 'Introducir BA a facturar:'
 read BA
-echo 'Introducir fecha AAAAMMDD:' 
-read date
+
+if [ -d /u02/netcracker/rbm/infinys_root/RBM_custom/BFM/BFMOutputDir ];
+then
+echo "Existe /u02/netcracker/rbm/infinys_root/RBM_custom/BFM/BFMOutputDir"
+else
+mkdir /u02/netcracker/rbm/infinys_root/RBM_custom/BFM/BFMOutputDir
+chmod 777 /u02/netcracker/rbm/infinys_root/RBM_custom/BFM/BFMOutputDir
+echo "Creado /u02/netcracker/rbm/infinys_root/RBM_custom/BFM/BFMOutputDir"
+fi
+
+if [ -d /u02/netcracker/rbm/infinys_root/RBM_int/RFU/RFUInputDir ];
+then
+echo "Existe /u02/netcracker/rbm/infinys_root/RBM_int/RFU/RFUInputDir"
+else
+mkdir /u02/netcracker/rbm/infinys_root/RBM_int/RFU/RFUInputDir
+chmod 777 /u02/netcracker/rbm/infinys_root/RBM_int/RFU/RFUInputDir
+echo "Creado /u02/netcracker/rbm/infinys_root/RBM_int/RFU/RFUInputDir"
+fi
+
+if [ -d /u02/netcracker/rbm/infinys_root/RBM_custom/BFM/BFMWorkDir ];
+then
+echo "Existe /u02/netcracker/rbm/infinys_root/RBM_custom/BFM/BFMWorkDir"
+else
+mkdir /u02/netcracker/rbm/infinys_root/RBM_custom/BFM/BFMWorkDir
+chmod 777 /u02/netcracker/rbm/infinys_root/RBM_custom/BFM/BFMWorkDir
+echo "Creado /u02/netcracker/rbm/infinys_root/RBM_custom/BFM/BFMWorkDir"
+fi
+
+if [ -d /u02/netcracker/rbm/infinys_root/RBM_custom/PDI/PDIOutputDir ];
+then
+echo "Existe /u02/netcracker/rbm/infinys_root/RBM_custom/PDI/PDIOutputDir"
+else
+mkdir /u02/netcracker/rbm/infinys_root/RBM_custom/PDI/PDIOutputDir
+chmod 777 /u02/netcracker/rbm/infinys_root/RBM_custom/PDI/PDIOutputDir
+echo "Creado /u02/netcracker/rbm/infinys_root/RBM_custom/PDI/PDIOutputDir"
+fi
+
+chmod -R ugo+rwx /u02/netcracker/rbm/infinys_root/RBM_custom/PDI
+chmod -R ugo+rwx /u02/netcracker/rbm/infinys_root/RBM_custom/BPP
+
+
+fechaa=$(sqlplus -s $DATABASE <<END
+       set pagesize 0 feedback off verify off heading off echo off;
+       select next_bill_dtm from account where account_num = '$BA';
+       exit;
+END
+)
+
+date=`date -d "${fechaa}" '+%Y%m%d'`
+
 echo
 echo "BA" $BA 
 echo "fecha" $date
